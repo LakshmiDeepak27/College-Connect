@@ -8,14 +8,20 @@ import NotificationsPage from "./pages/NotificationsPage";
 import OpportunitiesPage from "./pages/OpportunitiesPage";
 import EventsPage from "./pages/EventsPage";
 import ProfilePage from "./pages/ProfilePage";
+import VerifyEmail from "./pages/VerifyEmail";
 import ProtectedRoute from "./routes/ProtectedRoutes.jsx";
+import {ToastContainer} from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 function App() {
   return (
+
     <BrowserRouter>
+
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/signin" element={<Signin />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/main" element={<ProtectedRoute><Main /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
@@ -23,7 +29,9 @@ function App() {
         <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
         <Route path="/profile/:id?" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       </Routes>
+      <ToastContainer position="top-right" autoClose={3000} ></ToastContainer>
     </BrowserRouter>
+    
   );
 }
 

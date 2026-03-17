@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
-
-
+import {toast} from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const SignIn = () => {
     const navigate = useNavigate();
@@ -61,16 +61,16 @@ const SignIn = () => {
             const data = await res.json();
 
             if (!res.ok) {
-                alert(data.message || "Login failed");
+                toast.error(data.message || "Login failed");
                 return;
             }
 
             localStorage.setItem("token", data.token);
-            alert("Login successful");
+            toast.success("Login successful");
             navigate('/main');
         } catch (error) {
             console.error("Login error: ", error);
-            alert("Some thing went wrong");
+            toast.error ("Some thing went wrong");
         } finally {
             setIsLoading(false);
         }
@@ -78,6 +78,7 @@ const SignIn = () => {
 
 
     return (
+        
         <div className="min-h-screen bg-black flex items-center justify-center px-6 py-12 relative overflow-hidden">
             {/* Background elements */}
             <div className="absolute inset-0 overflow-hidden">
@@ -311,6 +312,7 @@ const SignIn = () => {
                 </div> */}
             </div>
         </div>
+    
     );
 };
 

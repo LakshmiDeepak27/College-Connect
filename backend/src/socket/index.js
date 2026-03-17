@@ -20,6 +20,12 @@ const initSocket = (server) => {
             console.log(`User ${socket.id} joined room ${room}`);
         });
 
+        // Register user for receiving personal notifications and messages
+        socket.on("register_user", (userId) => {
+            socket.join(userId);
+            console.log(`User ${userId} registered for notifications`);
+        });
+
         // Handle sending messages
         socket.on("send_message", async (data) => {
             const { room, sender, receiver, text } = data;
@@ -38,6 +44,15 @@ const initSocket = (server) => {
             } catch (error) {
                 console.error("Error saving message", error);
             }
+        });
+
+        // Typing indicators
+        socket.on("typing", (data) => {
+            socket.to(data.room).emit("typing", data);
+        });
+
+        socket.on("stop_typing", (data) => {
+            socket.to(data.room).emit("stop_typing", data);
         });
 
         socket.on("disconnect", () => {

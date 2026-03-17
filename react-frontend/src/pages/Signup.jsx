@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
+import {toast, ToastContainer} from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const SignUp = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -29,7 +31,7 @@ const SignUp = () => {
     // Handle form submission
     console.log('Form submitted:', formData);
     if (formData.password != formData.confirmPassword) {
-      alert("password do not match");
+      toast.error("password do not match");
       return;
     }
 
@@ -54,15 +56,16 @@ const SignUp = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "SignUp failed");
+        toast.error(data.message || "SignUp failed");
+    
         return;
       }
 
-      alert("Signup successful! Please Login.");
+      
       navigate("/signin");
     } catch (error) {
       console.error("Signup error:", error);
-      alert("Something went wrong");
+      toast.error("Something went wrong");
     } finally {
       setIsLoading(false);
     }
@@ -70,6 +73,7 @@ const SignUp = () => {
   };
 
   return (
+     
     <div className="min-h-screen bg-black flex items-center justify-center px-6 py-12 relative overflow-hidden">
 
       {/* Background elements */}
@@ -259,6 +263,7 @@ const SignUp = () => {
         </div>
       </div>
     </div>
+     
   );
 };
 

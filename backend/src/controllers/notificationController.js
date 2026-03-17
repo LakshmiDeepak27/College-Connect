@@ -44,6 +44,16 @@ exports.createStaticNotification = async (userId, message, actionUrl = "") => {
             actionUrl
         });
         await newNotification.save();
+
+        // Emit via socket
+        try {
+            const { getIo } = require('../socket');
+            const io = getIo();
+            io.to(userId.toString()).emit("new_notification", newNotification);
+        } catch (socketError) {
+            console.log("Socket emit skipped or failed:", socketError.message);
+        }
+
     } catch (error) {
         console.error("Failed to create internal notification:", error);
     }

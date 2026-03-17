@@ -12,6 +12,8 @@ function ChatPage() {
     const [newMessage, setNewMessage] = useState('');
     const [isLoadingConnections, setIsLoadingConnections] = useState(true);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+    const [typingUser, setTypingUser] = useState(null);
+    const typingTimeoutRef = useRef(null);
     const socketRef = useRef();
     const messagesEndRef = useRef(null);
 
@@ -48,8 +50,23 @@ function ChatPage() {
             }
         });
 
+        socketRef.current.on('typing', (data) => {
+            if (selectedUser && data.sender === selectedUser._id) {
+                setTypingUser(data.sender);
+                scrollToBottom();
+            }
+        });
+
+        socketRef.current.on('stop_typing', (data) => {
+            if (selectedUser && data.sender === selectedUser._id) {
+                setTypingUser(null);
+            }
+        });
+
         return () => {
             socketRef.current.off('receive_message');
+            socketRef.current.off('typing');
+            socketRef.current.off('stop_typing');
         };
     }, [selectedUser]);
 
@@ -115,6 +132,10 @@ function ChatPage() {
         };
 
         socketRef.current.emit('send_message', messageData);
+        // Stop typing immediately upon sending
+        socketRef.current.emit('stop_typing', { room, sender: currentUser._id });
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        
         setNewMessage('');
     };
 
@@ -216,6 +237,17 @@ function ChatPage() {
                                         );
                                     })
                                 )}
+                                {typingUser && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-white/10 text-white rounded-2xl rounded-bl-none px-4 py-2 text-sm shadow-sm backdrop-blur-md">
+                                            <div className="flex space-x-1">
+                                                <span className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce"></span>
+                                                <span className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                                                <span className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 <div ref={messagesEndRef} />
                             </div>
 
@@ -225,7 +257,16 @@ function ChatPage() {
                                     <div className="flex-1 border border-white/10 rounded-2xl bg-white/5 focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-white/20 transition-all duration-200 p-1 flex">
                                         <textarea
                                             value={newMessage}
-                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            onChange={(e) => {
+                                                setNewMessage(e.target.value);
+                                                const room = [currentUser._id, selectedUser._id].sort().join('_');
+                                                socketRef.current.emit('typing', { room, sender: currentUser._id });
+                                                
+                                                if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                                                typingTimeoutRef.current = setTimeout(() => {
+                                                    socketRef.current.emit('stop_typing', { room, sender: currentUser._id });
+                                                }, 2000);
+                                            }}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();

@@ -17,6 +17,8 @@ const [userPosts, setUserPosts] = useState([]);
 const [activeTab, setActiveTab] = useState("posts");
 
 const [isEditing, setIsEditing] = useState(false);
+const [connectionStatus, setConnectionStatus] = useState(null);
+const [connectionId, setConnectionId] = useState(null);
 
 const [editForm, setEditForm] = useState({
 role: 'student',
@@ -37,8 +39,26 @@ if (currentUser) {
 const targetId = id || currentUser._id;
 fetchProfile(targetId);
 fetchUserPosts(targetId);
+if (targetId !== currentUser._id) {
+    fetchConnectionStatus(targetId);
+}
 }
 }, [id, currentUser]);
+
+const fetchConnectionStatus = async (targetId) => {
+try {
+const token = localStorage.getItem('token');
+const res = await axios.get(`http://localhost:5000/api/connections/status/${targetId}`, {
+headers: { Authorization: `Bearer ${token}` }
+});
+setConnectionStatus(res.data.status);
+if (res.data.connectionId) {
+    setConnectionId(res.data.connectionId);
+}
+} catch (error) {
+console.error("Error fetching connection status", error);
+}
+};
 
 const fetchCurrentUser = async () => {
 try {
@@ -200,6 +220,7 @@ await axios.post(
 { headers:{ Authorization:`Bearer ${token}` } }
 );
 
+setConnectionStatus('request_sent');
 alert("Connection Request Sent");
 
 } catch (error) {
@@ -208,6 +229,35 @@ alert("Already requested or connected");
 
 }
 
+};
+
+const handleAccept = async () => {
+try {
+const token = localStorage.getItem('token');
+await axios.post(`http://localhost:5000/api/connections/accept/${connectionId}`, {}, {
+headers: { Authorization: `Bearer ${token}` }
+});
+setConnectionStatus('connected');
+} catch (error) {
+alert("Error accepting request");
+}
+};
+
+const handleReject = async () => {
+try {
+const token = localStorage.getItem('token');
+await axios.post(`http://localhost:5000/api/connections/reject/${connectionId}`, {}, {
+headers: { Authorization: `Bearer ${token}` }
+});
+setConnectionStatus('not_connected');
+setConnectionId(null);
+} catch (error) {
+alert("Error rejecting request");
+}
+};
+
+const handleMessage = () => {
+    navigate('/chat');
 };
 
 if (!profileData || !currentUser)
@@ -290,12 +340,23 @@ className="bg-white/10 px-4 py-1 rounded"
 
 ):(
 
-<button
-onClick={handleConnect}
-className="bg-blue-600 px-5 py-1 rounded"
->
-Connect
-</button>
+<div className="flex gap-2">
+{connectionStatus === 'not_connected' && (
+<button onClick={handleConnect} className="bg-blue-600 px-5 py-1 rounded hover:bg-blue-700 transition">Connect</button>
+)}
+{connectionStatus === 'request_sent' && (
+<button disabled className="bg-gray-600 px-5 py-1 rounded cursor-not-allowed">Pending</button>
+)}
+{connectionStatus === 'request_received' && (
+<>
+<button onClick={handleAccept} className="bg-green-600 px-5 py-1 rounded hover:bg-green-700 transition">Accept</button>
+<button onClick={handleReject} className="bg-red-600 px-5 py-1 rounded hover:bg-red-700 transition">Reject</button>
+</>
+)}
+{connectionStatus === 'connected' && (
+<button onClick={handleMessage} className="bg-indigo-600 px-5 py-1 rounded hover:bg-indigo-700 transition">Message</button>
+)}
+</div>
 
 )}
 

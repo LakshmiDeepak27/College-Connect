@@ -104,3 +104,43 @@ exports.getPendingRequests = async (req, res) => {
         res.status(500).json({ message: "Error fetching requests", error: error.message });
     }
 };
+
+// Check connection status with another user
+exports.checkStatus = async (req, res) => {
+    try {
+        const targetUserId = req.params.targetUserId;
+        const currentUserId = req.userId;
+
+        if (currentUserId === targetUserId) {
+            return res.status(200).json({ status: 'self' });
+        }
+
+        const connection = await Connection.findOne({
+            $or: [
+                { sender: currentUserId, receiver: targetUserId },
+                { sender: targetUserId, receiver: currentUserId }
+            ]
+        });
+
+        if (!connection) {
+            return res.status(200).json({ status: 'not_connected' });
+        }
+
+        if (connection.status === 'accepted') {
+            return res.status(200).json({ status: 'connected', connectionId: connection._id });
+        }
+
+        if (connection.status === 'pending') {
+            if (connection.sender.toString() === currentUserId) {
+                return res.status(200).json({ status: 'request_sent', connectionId: connection._id });
+            } else {
+                return res.status(200).json({ status: 'request_received', connectionId: connection._id });
+            }
+        }
+
+        return res.status(200).json({ status: connection.status });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error checking status", error: error.message });
+    }
+};

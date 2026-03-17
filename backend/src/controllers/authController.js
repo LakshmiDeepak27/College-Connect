@@ -12,28 +12,15 @@ const User = require('../models/User');
 // }
 
 
-exports.register = async (req , res)=>{
-    // try{
-    //     res.json({message: "Register route working"});
-    // }catch(error){
-    //     res.status(500).json({message: "Server Error"});
-    // }
-    // try{
-    //     console.log(req.body);
-    //     res.json({
-    //         message: "Data received",
-    //         data: req.body
-    //     });
-    // }catch(error){
-    //     res.start(500).json({message:"server error"});
-    // }
+const nodemailer = require('nodemailer');
 
+exports.register = async (req , res)=>{
     try{
         const {username , email , password , countryCode, mobile  , agreeToTerms} = req.body;
 
         if (!agreeToTerms) {
-  return res.status(400).json({ message: "You must agree to terms" });
-}
+            return res.status(400).json({ message: "You must agree to terms" });
+        }
 
         if(!username || !email || !password || !countryCode || !mobile){
             return res.status(400).json({message: "All field required"});
@@ -44,7 +31,6 @@ exports.register = async (req , res)=>{
             return res.status(400).json({message : "User already exists"});
         }
 
-
         const user= await User.create({
             username,
             email,
@@ -52,13 +38,65 @@ exports.register = async (req , res)=>{
             countryCode,
             mobile,
         });
+
+        // Send verification email
+        const token = jwt.sign(
+            { id: user._id },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: '1d' }
+        );
+
+        // Dummy/Test transporter setup. Note: Should use actual smtp in production.
+        const transporter = nodemailer.createTransport({
+            service: 'gmail', // or mock service
+            auth: {
+                user: process.env.EMAIL_USER || 'test@example.com',
+                pass: process.env.EMAIL_PASS || 'password'
+            }
+        });
+
+        const mailOptions = {
+            from: 'noreply@collegeconnect.com',
+            to: user.email,
+            subject: 'Email Verification - College Connect',
+            html: `<h3>Please verify your email</h3>
+                   <p>Click <a href="http://localhost:5173/verify-email?token=${token}">here</a> to verify your account.</p>`
+        };
+
+        // We don't await this so it doesn't block the response, or we can await and catch silently
+        transporter.sendMail(mailOptions).catch(err => console.log('Mail failed (mocking):', err.message));
+
         res.status(201).json({
-            message: "User registered successfully",
+            message: "User registered successfully. Please check your email to verify.",
             userId: user._id
         });
     }catch(error){
         console.log("register error" , error);
        return res.status(500).json({message: "Server error"});
+    }
+};
+
+exports.verifyEmail = async (req, res) => {
+    try {
+        const { token } = req.query;
+        if (!token) {
+            return res.status(400).json({ message: "Token is missing" });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.isVerified = true;
+        await user.save();
+
+        res.status(200).json({ message: "Email verified successfully!" });
+    } catch (error) {
+        console.log("Verify error", error);
+        return res.status(400).json({ message: "Invalid or expired token" });
     }
 };
 

@@ -18,12 +18,23 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
+const rateLimit = require('express-rate-limit');
+
 app.use(cors({
     origin: "http://localhost:5173",
 }));
 
-
 app.use(express.json());
+
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 200, // Limit each IP to 200 requests per `window`
+    message: "Too many requests from this IP, please try again after 15 minutes",
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use("/api", apiLimiter);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);

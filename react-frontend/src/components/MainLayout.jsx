@@ -1,9 +1,59 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const MainLayout = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Fetch initial unread count
+    const fetchUnread = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const unread = res.data.filter(n => !n.read).length;
+        setUnreadCount(unread);
+      } catch (err) {
+        console.error("Failed to fetch notifications", err);
+      }
+    };
+    fetchUnread();
+
+    try {
+      // Decode JWT token to get user ID
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = payload.id;
+
+      const newSocket = io("http://localhost:5000");
+      newSocket.emit("register_user", userId);
+
+      newSocket.on("new_notification", (notif) => {
+        setUnreadCount(prev => prev + 1);
+        toast.info(notif.message, {
+           onClick: () => navigate('/notifications'),
+           position: "top-right",
+           autoClose: 5000,
+           hideProgressBar: false,
+           closeOnClick: true,
+           pauseOnHover: true,
+           draggable: true,
+           theme: "dark"
+        });
+      });
+
+      return () => newSocket.disconnect();
+    } catch (e) {
+      console.error("Socket connection failed", e);
+    }
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -60,10 +110,16 @@ const MainLayout = ({ children }) => {
               />
             </div>
 
-            <Link to="/notifications" className="hidden sm:block text-slate-300 hover:text-white text-sm font-medium transition-colors">
-              Notifications
+            <Link to="/notifications" className="hidden sm:flex text-slate-300 hover:text-white transition-colors relative items-center">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Link>
-
             <Link to="/profile" className="text-slate-300 hover:text-white text-sm font-medium transition-colors">
               Profile
             </Link>
@@ -107,9 +163,18 @@ const MainLayout = ({ children }) => {
               <Link to="/events" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 rounded-md hover:bg-white/10 text-slate-300 hover:text-white font-medium transition-colors">
                 Events
               </Link>
+              
+              <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 rounded-md hover:bg-white/10 text-slate-300 hover:text-white font-medium transition-colors">
+                Connections
+              </Link>
 
-              <Link to="/notifications" onClick={() => setIsMenuOpen(false)} className="sm:hidden px-3 py-2 rounded-md hover:bg-white/10 text-slate-300 hover:text-white font-medium transition-colors">
-                Notifications
+              <Link to="/notifications" onClick={() => setIsMenuOpen(false)} className="sm:hidden px-3 py-2 rounded-md hover:bg-white/10 text-slate-300 hover:text-white font-medium transition-colors flex items-center justify-between">
+                <span>Notifications</span>
+                {unreadCount > 0 && (
+                   <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                     {unreadCount}
+                   </span>
+                )}
               </Link>
             </nav>
           </aside>
