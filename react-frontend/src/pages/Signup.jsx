@@ -7,6 +7,7 @@ const SignUp = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignedUp, setIsSignedUp] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -62,7 +63,8 @@ const SignUp = () => {
       }
 
       
-      navigate("/signin");
+      setIsSignedUp(true);
+      toast.success("Registration successful! Please check your email to verify your account.");
     } catch (error) {
       console.error("Signup error:", error);
       toast.error("Something went wrong");
@@ -88,171 +90,199 @@ const SignUp = () => {
       {/* Signup Form Container */}
       <div className="relative w-full max-w-2xl">
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="font-heading text-3xl font-bold text-white mb-2">
-              Create Account
-            </h1>
-            <p className="text-white/60 text-sm">
-              Join the College Connect academic community
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-5">
-
-            {/* Username */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Username
-              </label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="Choose a username"
-                required
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="your.email@example.com"
-                required
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
-
-            {/* Mobile */}
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Mobile Number
-              </label>
-
-              <div className="flex gap-2">
-                <select
-                  name="countryCode"
-                  value={formData.countryCode}
-                  onChange={handleChange}
-                  className="w-28 px-3 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option className="bg-gray-900 text-white" value="+91">IN +91</option>
-                  <option className="bg-gray-900 text-white" value="+1">US +1</option>
-                  <option className="bg-gray-900 text-white" value="+44">UK +44</option>
-                  <option className="bg-gray-900 text-white" value="+61">AUS +61</option>
-                </select>
-
-                <input
-                  type="tel"
-                  name="mobile"
-                  value={formData.mobile}
-                  onChange={handleChange}
-                  placeholder="Enter mobile number"
-                  required
-                  className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                />
+          {isSignedUp ? (
+            <div className="text-center py-10">
+              <div className="h-20 w-20 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/40">
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
               </div>
-            </div>
-
-            {/* Password */}
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Create a strong password"
-                  required
-                  className="w-full px-4 py-3 pr-12 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-blue-400 transition-colors"
+              <h2 className="text-2xl font-bold text-white mb-4">Check Your Email</h2>
+              <p className="text-white/60 mb-8 leading-relaxed">
+                We've sent a verification link to <span className="text-white font-semibold">{formData.email}</span>. 
+                Please click the link in the email to verify your account and start using College Connect.
+              </p>
+              <div className="space-y-4">
+                <button 
+                  onClick={() => navigate('/signin')}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-blue-600/30"
                 >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
+                  Go to Login
                 </button>
+                <p className="text-xs text-white/40">
+                  Didn't receive the email? Check your spam folder or contact support.
+                </p>
               </div>
             </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="text-center mb-8">
+                <h1 className="font-heading text-3xl font-bold text-white mb-2">
+                  Create Account
+                </h1>
+                <p className="text-white/60 text-sm">
+                  Join the College Connect academic community
+                </p>
+              </div>
 
-            {/* Confirm Password */}
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Confirm Password
-              </label>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Re-enter your password"
-                required
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
+              <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-5">
 
-            {/* Terms & Conditions */}
-            <div className="col-span-2 flex items-start">
-              <label className="flex items-start text-sm text-white/70 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  name="agreeToTerms"
-                  checked={formData.agreeToTerms}
-                  onChange={handleChange}
-                  required
-                  className="w-4 h-4 mt-0.5 rounded border-white/20 bg-white/5 text-blue-600 focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                />
-                <span className="ml-2 group-hover:text-white transition-colors duration-300">
-                  I agree to the{' '}
-                  <a href="#" className="text-blue-400 hover:text-blue-300 font-medium">Terms of Service</a>
-                  {' '}and{' '}
-                  <a href="#" className="text-blue-400 hover:text-blue-300 font-medium">Privacy Policy</a>
-                </span>
-              </label>
-            </div>
+                {/* Username */}
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    placeholder="Choose a username"
+                    required
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
 
-            {/* Submit Button */}
-            <div className="col-span-2">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-3.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-300 shadow-lg shadow-blue-600/30"
-              >
-                {isLoading ? <LoadingSpinner size="sm" color="text-white" /> : "Create Account"}
-              </button>
-            </div>
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="your.email@example.com"
+                    required
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
 
-            {/* Login Link */}
-            <div className="col-span-2 text-center text-sm text-white/60">
-              Already have an account?{' '}
-              <a href="/signin" className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-300">
-                Sign In
-              </a>
-            </div>
+                {/* Mobile */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    Mobile Number
+                  </label>
 
-          </form>
+                  <div className="flex gap-2">
+                    <select
+                      name="countryCode"
+                      value={formData.countryCode}
+                      onChange={handleChange}
+                      className="w-28 px-3 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option className="bg-gray-900 text-white" value="+91">IN +91</option>
+                      <option className="bg-gray-900 text-white" value="+1">US +1</option>
+                      <option className="bg-gray-900 text-white" value="+44">UK +44</option>
+                      <option className="bg-gray-900 text-white" value="+61">AUS +61</option>
+                    </select>
+
+                    <input
+                      type="tel"
+                      name="mobile"
+                      value={formData.mobile}
+                      onChange={handleChange}
+                      placeholder="Enter mobile number"
+                      required
+                      className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Create a strong password"
+                      required
+                      className="w-full px-4 py-3 pr-12 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-blue-400 transition-colors"
+                    >
+                      {showPassword ? (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    Confirm Password
+                  </label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Re-enter your password"
+                    required
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                {/* Terms & Conditions */}
+                <div className="col-span-2 flex items-start">
+                  <label className="flex items-start text-sm text-white/70 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      name="agreeToTerms"
+                      checked={formData.agreeToTerms}
+                      onChange={handleChange}
+                      required
+                      className="w-4 h-4 mt-0.5 rounded border-white/20 bg-white/5 text-blue-600 focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                    />
+                    <span className="ml-2 group-hover:text-white transition-colors duration-300">
+                      I agree to the{' '}
+                      <a href="#" className="text-blue-400 hover:text-blue-300 font-medium">Terms of Service</a>
+                      {' '}and{' '}
+                      <a href="#" className="text-blue-400 hover:text-blue-300 font-medium">Privacy Policy</a>
+                    </span>
+                  </label>
+                </div>
+
+                {/* Submit Button */}
+                <div className="col-span-2">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full flex justify-center py-3.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-300 shadow-lg shadow-blue-600/30"
+                  >
+                    {isLoading ? <LoadingSpinner size="sm" color="text-white" /> : "Create Account"}
+                  </button>
+                </div>
+
+                {/* Login Link */}
+                <div className="col-span-2 text-center text-sm text-white/60">
+                  Already have an account?{' '}
+                  <a href="/signin" className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-300">
+                    Sign In
+                  </a>
+                </div>
+
+              </form>
+            </>
+          )}
         </div>
 
         {/* Bottom Note */}

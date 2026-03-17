@@ -10,9 +10,10 @@ function ChatPage() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
-    const [isLoadingConnections, setIsLoadingConnections] = useState(true);
+    const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [typingUser, setTypingUser] = useState(null);
+    const [onlineUsers, setOnlineUsers] = useState(new Set());
     const typingTimeoutRef = useRef(null);
     const socketRef = useRef();
     const messagesEndRef = useRef(null);
@@ -23,8 +24,15 @@ function ChatPage() {
 
         // Initialize socket
         socketRef.current = io('http://localhost:5000');
+        
+        // Register user for socket events
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user?._id) {
+            socketRef.current.emit('register_user', user._id);
+        }
 
         fetchUserProfile();
+        fetchConversations();
 
         return () => {
             if (socketRef.current) socketRef.current.disconnect();
@@ -33,13 +41,31 @@ function ChatPage() {
 
     useEffect(() => {
         if (!currentUser) return;
-        fetchConnections();
+        // Periodic refresh of conversations or use socket for updates
     }, [currentUser]);
 
     useEffect(() => {
         if (!socketRef.current) return;
 
         socketRef.current.on('receive_message', (msg) => {
+            // Update conversation list item (last message + unread count if not active)
+            setConnections(prev => {
+                const otherPartyId = msg.sender === currentUser?._id ? msg.receiver : msg.sender;
+                const existing = prev.find(c => c.user._id === otherPartyId);
+                
+                if (existing) {
+                    return prev.map(c => c.user._id === otherPartyId ? {
+                        ...c,
+                        lastMessage: msg,
+                        unreadCount: (selectedUser?._id === otherPartyId) ? 0 : (msg.sender === otherPartyId ? c.unreadCount + 1 : c.unreadCount)
+                    } : c).sort((a, b) => new Date(b.lastMessage.createdAt) - new Date(a.lastMessage.createdAt));
+                } else {
+                    // Fetch conversations again to get user details if new conversation
+                    fetchConversations();
+                    return prev;
+                }
+            });
+
             // Only add if it belongs to the current open chat
             if (
                 selectedUser &&
@@ -47,7 +73,20 @@ function ChatPage() {
             ) {
                 setMessages((prev) => [...prev, msg]);
                 scrollToBottom();
+                // Send read status back if we are the receiver
+                if (msg.receiver === currentUser?._id) {
+                    markAsReadInBackend(selectedUser._id);
+                }
             }
+        });
+
+        socketRef.current.on('user_status', ({ userId, status }) => {
+            setOnlineUsers(prev => {
+                const next = new Set(prev);
+                if (status === 'online') next.add(userId);
+                else next.delete(userId);
+                return next;
+            });
         });
 
         socketRef.current.on('typing', (data) => {
@@ -65,10 +104,11 @@ function ChatPage() {
 
         return () => {
             socketRef.current.off('receive_message');
+            socketRef.current.off('user_status');
             socketRef.current.off('typing');
             socketRef.current.off('stop_typing');
         };
-    }, [selectedUser]);
+    }, [selectedUser, currentUser]);
 
     const fetchUserProfile = async () => {
         try {
@@ -82,17 +122,28 @@ function ChatPage() {
         }
     };
 
-    const fetchConnections = async () => {
+    const fetchConversations = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/user/connections/${currentUser._id}`, {
+            const res = await axios.get(`http://localhost:5000/api/messages/conversations`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setConnections(res.data);
         } catch (error) {
-            console.error('Error fetching connections', error);
+            console.error('Error fetching conversations', error);
         } finally {
-            setIsLoadingConnections(false);
+            setIsLoadingConversations(false);
+        }
+    };
+
+    const markAsReadInBackend = async (userId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`http://localhost:5000/api/messages/read/${userId}`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (err) {
+            console.error("Mark read error:", err);
         }
     };
 
@@ -112,6 +163,10 @@ function ChatPage() {
             });
             setMessages(res.data);
             scrollToBottom();
+            
+            // Mark as read
+            markAsReadInBackend(user._id);
+            setConnections(prev => prev.map(c => c.user._id === user._id ? { ...c, unreadCount: 0 } : c));
         } catch (error) {
             console.error('Error fetching history', error);
         } finally {
@@ -158,31 +213,54 @@ function ChatPage() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto">
-                        {isLoadingConnections ? (
+                        {isLoadingConversations ? (
                             <div className="py-10"><LoadingSpinner color="text-blue-400" /></div>
                         ) : connections.length === 0 ? (
                             <div className="p-6 text-center text-white/50 text-sm">
-                                You don't have any connections yet to chat with.
+                                You don't have any recent conversations.
                             </div>
                         ) : (
                             <ul>
-                                {connections.map((user) => (
-                                        <li
-                                        key={user._id}
-                                        onClick={() => handleSelectUser(user)}
+                                {connections.map((item) => (
+                                    <li
+                                        key={item.user._id}
+                                        onClick={() => handleSelectUser(item.user)}
                                         className={`p-4 border-b border-white/5 cursor-pointer transition-colors duration-150 flex items-center space-x-3 
-                                            ${selectedUser?._id === user._id ? 'bg-blue-600/10 border-l-4 border-l-blue-500' : 'hover:bg-white/5 border-l-4 border-l-transparent'}`}
+                                            ${selectedUser?._id === item.user._id ? 'bg-blue-600/10 border-l-4 border-l-blue-500' : 'hover:bg-white/5 border-l-4 border-l-transparent'}`}
                                     >
-                                        <div className="h-10 w-10 rounded-full bg-blue-900/40 flex items-center justify-center text-blue-200 font-bold flex-shrink-0 overflow-hidden border border-blue-500/20">
-                                            {user.profilePicture ? (
-                                                <img src={user.profilePicture} alt="Profile" className="h-full w-full object-cover" />
-                                            ) : (
-                                                user.username?.charAt(0)?.toUpperCase()
+                                        <div className="relative">
+                                            <div className="h-12 w-12 rounded-full bg-blue-900/40 flex items-center justify-center text-blue-200 font-bold flex-shrink-0 overflow-hidden border border-blue-500/20">
+                                                {item.user.profilePicture ? (
+                                                    <img src={item.user.profilePicture} alt="Profile" className="h-full w-full object-cover" />
+                                                ) : (
+                                                    item.user.username?.charAt(0)?.toUpperCase()
+                                                )}
+                                            </div>
+                                            {onlineUsers.has(item.user._id) && (
+                                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#121212] rounded-full"></div>
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-white truncate">{user.username}</p>
-                                            <p className="text-xs text-white/50 truncate capitalize">{user.role}</p>
+                                            <div className="flex justify-between items-baseline">
+                                                <p className="text-sm font-semibold text-white truncate">{item.user.username}</p>
+                                                {item.lastMessage && (
+                                                    <span className="text-[10px] text-white/40 ml-1">
+                                                        {new Date(item.lastMessage.createdAt).toLocaleDateString() === new Date().toLocaleDateString() 
+                                                            ? new Date(item.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                            : new Date(item.lastMessage.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <p className={`text-xs truncate ${item.unreadCount > 0 ? 'text-white font-medium' : 'text-white/50'}`}>
+                                                    {item.lastMessage?.sender === currentUser?._id ? 'You: ' : ''}{item.lastMessage?.text}
+                                                </p>
+                                                {item.unreadCount > 0 && (
+                                                    <span className="bg-blue-600 text-[10px] text-white font-bold h-4 w-4 flex items-center justify-center rounded-full ml-1">
+                                                        {item.unreadCount}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </li>
                                 ))}

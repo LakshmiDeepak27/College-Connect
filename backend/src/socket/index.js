@@ -2,6 +2,7 @@ const { Server } = require("socket.io");
 const Message = require('../models/Message');
 
 let io;
+const onlineUsers = new Map(); // userId -> socketId
 
 const initSocket = (server) => {
     io = new Server(server, {
@@ -12,6 +13,7 @@ const initSocket = (server) => {
     });
 
     io.on("connection", (socket) => {
+        let connectedUserId;
         console.log("User connected:", socket.id);
 
         // Join a private room with a specific user
@@ -22,8 +24,12 @@ const initSocket = (server) => {
 
         // Register user for receiving personal notifications and messages
         socket.on("register_user", (userId) => {
+            connectedUserId = userId;
+            onlineUsers.set(userId, socket.id);
             socket.join(userId);
-            console.log(`User ${userId} registered for notifications`);
+            // Broadcast online status
+            io.emit("user_status", { userId, status: "online" });
+            console.log(`User ${userId} registered and online`);
         });
 
         // Handle sending messages
@@ -55,7 +61,18 @@ const initSocket = (server) => {
             socket.to(data.room).emit("stop_typing", data);
         });
 
+        // Handle message read
+        socket.on("message_read", ({ messageId, senderId, receiverId }) => {
+            // Notify the sender that the message was read
+            io.to(senderId).emit("message_read", { messageId, receiverId });
+        });
+
         socket.on("disconnect", () => {
+            if (connectedUserId) {
+                onlineUsers.delete(connectedUserId);
+                io.emit("user_status", { userId: connectedUserId, status: "offline" });
+                console.log(`User ${connectedUserId} offline`);
+            }
             console.log("User disconnected:", socket.id);
         });
     });

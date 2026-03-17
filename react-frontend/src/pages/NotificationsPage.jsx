@@ -28,22 +28,22 @@ function NotificationsPage() {
             const token = localStorage.getItem('token');
             const url = id
                 ? `http://localhost:5000/api/notifications/read/${id}`
-                : `http://localhost:5000/api/notifications/read`;
+                : `http://localhost:5000/api/notifications/read-all`;
 
-            await axios.put(url, {}, {
+            await axios.patch(url, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             // Local state update for snappy UI
             setNotifications(prev => prev.map(notif =>
-                (id === null || notif._id === id) ? { ...notif, read: true } : notif
+                (id === null || notif._id === id) ? { ...notif, isRead: true } : notif
             ));
         } catch (error) {
             console.error('Error marking as read', error);
         }
     };
 
-    const unreadCount = notifications.filter(n => !n.read).length;
+    const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
         <MainLayout>
@@ -82,14 +82,14 @@ function NotificationsPage() {
                             notifications.map(notification => (
                                 <div
                                     key={notification._id}
-                                    onClick={() => !notification.read && markAsRead(notification._id)}
-                                    className={`p-4 flex items-start space-x-4 transition-colors duration-150 cursor-pointer ${notification.read ? 'bg-transparent hover:bg-white/5' : 'bg-blue-900/20 hover:bg-blue-900/30'
+                                    onClick={() => !notification.isRead && markAsRead(notification._id)}
+                                    className={`p-4 flex items-start space-x-4 transition-colors duration-150 cursor-pointer ${notification.isRead ? 'bg-transparent hover:bg-white/5' : 'bg-blue-900/20 hover:bg-blue-900/30'
                                         }`}
                                 >
-                                    <div className={`mt-1 flex-shrink-0 h-2 w-2 rounded-full ${notification.read ? 'bg-transparent' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]'}`}></div>
+                                    <div className={`mt-1 flex-shrink-0 h-2 w-2 rounded-full ${notification.isRead ? 'bg-transparent' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]'}`}></div>
                                     <div className="flex-1">
                                         <div className="flex justify-between items-start">
-                                            <p className={`text-sm ${notification.read ? 'text-white/60' : 'text-white/90 font-medium'}`}>
+                                            <p className={`text-sm ${notification.isRead ? 'text-white/60' : 'text-white/90 font-medium'}`}>
                                                 {notification.message}
                                             </p>
                                         </div>
@@ -99,7 +99,7 @@ function NotificationsPage() {
                                             })}
                                         </p>
                                     </div>
-                                    {!notification.read && (
+                                    {!notification.isRead && (
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();

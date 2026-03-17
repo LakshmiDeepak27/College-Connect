@@ -65,7 +65,10 @@ exports.attendEvent = async (req, res) => {
                 const attendee = await User.findById(req.userId);
                 await createStaticNotification(
                     event.organizer,
-                    `${attendee.username} RSVP'd to your event: ${event.title}`
+                    `${attendee.username} RSVP'd to your event: ${event.title}`,
+                    'event_rsvp',
+                    attendee._id,
+                    `/events`
                 );
             }
         }

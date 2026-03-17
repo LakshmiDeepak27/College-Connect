@@ -9,6 +9,10 @@ import OpportunitiesPage from "./pages/OpportunitiesPage";
 import EventsPage from "./pages/EventsPage";
 import ProfilePage from "./pages/ProfilePage";
 import VerifyEmail from "./pages/VerifyEmail";
+import ConnectionsPage from "./pages/ConnectionsPage";
+import SearchPage from "./pages/SearchPage";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import ProtectedRoute from "./routes/ProtectedRoutes.jsx";
 import {ToastContainer} from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -22,11 +26,15 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/signin" element={<Signin />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/main" element={<ProtectedRoute><Main /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path="/opportunities" element={<ProtectedRoute><OpportunitiesPage /></ProtectedRoute>} />
         <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
+        <Route path="/connections" element={<ProtectedRoute><ConnectionsPage /></ProtectedRoute>} />
+        <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
         <Route path="/profile/:id?" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} ></ToastContainer>

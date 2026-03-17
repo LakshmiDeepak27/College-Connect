@@ -4,7 +4,7 @@ const { getProfile } = require("../controllers/authController");
 const protect = require("../middleware/authMiddleware");
 const upload = require('../middleware/uploadMiddleware');
 
-const { getUserProfile, updateUserProfile, getUserConnections, getUserSuggestions } = require('../controllers/userController');
+const { getUserProfile, updateUserProfile, getUserConnections, getUserSuggestions, searchUsers } = require('../controllers/userController');
 
 // The existing profile route comes from authController currently, keeping it for backward compatibility if needed, 
 // but adding the new ones
@@ -12,6 +12,7 @@ router.get("/profile", protect, getProfile);
 
 // New unified profile routes
 router.get("/suggestions", protect, getUserSuggestions);
+router.get("/search", protect, searchUsers);
 router.get("/:id", protect, getUserProfile);
 router.put("/update", protect, updateUserProfile);
 router.get("/connections/:id", protect, getUserConnections);

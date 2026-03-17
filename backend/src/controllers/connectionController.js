@@ -32,7 +32,7 @@ exports.sendRequest = async (req, res) => {
 
         // Notify receiver
         const sender = await User.findById(senderId);
-        await createStaticNotification(receiverId, `${sender.username} sent you a connection request.`);
+        await createStaticNotification(receiverId, `${sender.username} sent you a connection request.`, 'connection_request', senderId, `/connections`);
 
         res.status(201).json({ message: "Connection request sent", connection: newConnection });
     } catch (error) {
@@ -43,7 +43,7 @@ exports.sendRequest = async (req, res) => {
 // Accept connection request
 exports.acceptRequest = async (req, res) => {
     try {
-        const { connectionId } = req.params;
+        const { connectionId } = req.body; // Changed from req.params to req.body
         const connection = await Connection.findById(connectionId);
 
         if (!connection) {
@@ -63,7 +63,7 @@ exports.acceptRequest = async (req, res) => {
 
         // Notify sender that their request was accepted
         const receiver = await User.findById(connection.receiver);
-        await createStaticNotification(connection.sender, `${receiver.username} accepted your connection request.`);
+        await createStaticNotification(connection.sender, `${receiver.username} accepted your connection request.`, 'connection_accept', receiver._id, `/connections`);
 
         res.status(200).json({ message: "Connection accepted", connection });
     } catch (error) {
@@ -74,7 +74,7 @@ exports.acceptRequest = async (req, res) => {
 // Reject connection request
 exports.rejectRequest = async (req, res) => {
     try {
-        const { connectionId } = req.params;
+        const { connectionId } = req.body; // Changed from req.params to req.body
         const connection = await Connection.findById(connectionId);
 
         if (!connection) {
@@ -108,7 +108,7 @@ exports.getPendingRequests = async (req, res) => {
 // Check connection status with another user
 exports.checkStatus = async (req, res) => {
     try {
-        const targetUserId = req.params.targetUserId;
+        const targetUserId = req.params.userId;
         const currentUserId = req.userId;
 
         if (currentUserId === targetUserId) {
@@ -142,5 +142,35 @@ exports.checkStatus = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ message: "Error checking status", error: error.message });
+    }
+};
+
+// Get connected users
+exports.getConnectionsList = async (req, res) => {
+    try {
+        const currentUserId = req.userId;
+        
+        // Find accepted connections where current user is either sender or receiver
+        const connections = await Connection.find({
+            $or: [
+                { sender: currentUserId },
+                { receiver: currentUserId }
+            ],
+            status: 'accepted'
+        }).populate('sender', 'username profilePicture role department')
+          .populate('receiver', 'username profilePicture role department');
+
+        // Format to return just the connected users, not the connection objects
+        const connectedUsers = connections.map(conn => {
+            if (conn.sender._id.toString() === currentUserId) {
+                return conn.receiver;
+            } else {
+                return conn.sender;
+            }
+        });
+
+        res.status(200).json(connectedUsers);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching connections", error: error.message });
     }
 };

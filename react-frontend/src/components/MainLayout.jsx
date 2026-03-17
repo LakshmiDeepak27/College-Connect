@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 const MainLayout = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,10 +21,15 @@ const MainLayout = ({ children }) => {
         const res = await axios.get('http://localhost:5000/api/notifications', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const unread = res.data.filter(n => !n.read).length;
+        const unread = res.data.filter(n => !n.isRead).length;
         setUnreadCount(unread);
+
+        const msgRes = await axios.get('http://localhost:5000/api/messages/unread-count', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        setUnreadMsgCount(msgRes.data.count);
       } catch (err) {
-        console.error("Failed to fetch notifications", err);
+        console.error("Failed to fetch counts", err);
       }
     };
     fetchUnread();
@@ -49,6 +56,19 @@ const MainLayout = ({ children }) => {
         });
       });
 
+      newSocket.on("receive_message", (msg) => {
+        if (msg.receiver === userId) {
+            setUnreadMsgCount(prev => prev + 1);
+            // Optional: toast for message if not on chat page
+            if (window.location.pathname !== '/chat') {
+                toast.info(`New message from ${msg.senderName || 'someone'}`, {
+                    onClick: () => navigate('/chat'),
+                    theme: "dark"
+                });
+            }
+        }
+      });
+
       return () => newSocket.disconnect();
     } catch (e) {
       console.error("Socket connection failed", e);
@@ -58,6 +78,12 @@ const MainLayout = ({ children }) => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/signin");
+  };
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      navigate(`/search?q=${searchTerm}`);
+    }
   };
 
   return (
@@ -105,8 +131,11 @@ const MainLayout = ({ children }) => {
               </div>
               <input
                 type="text"
-                placeholder="Search..."
-                className="w-40 xl:w-64 lg:w-48 pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-white/40 transition-all"
+                placeholder="Search individuals, skills..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleSearch}
+                className="w-40 xl:w-64 lg:w-48 pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-white/40 transition-all font-medium"
               />
             </div>
 
@@ -152,8 +181,13 @@ const MainLayout = ({ children }) => {
                 Profile
               </Link>
 
-              <Link to="/chat" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 rounded-md hover:bg-white/10 text-slate-300 hover:text-white font-medium transition-colors">
-                Chat
+              <Link to="/chat" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 rounded-md hover:bg-white/10 text-slate-300 hover:text-white font-medium transition-colors flex items-center justify-between">
+                <span>Chat</span>
+                {unreadMsgCount > 0 && (
+                    <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        {unreadMsgCount}
+                    </span>
+                )}
               </Link>
 
               <Link to="/opportunities" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 rounded-md hover:bg-white/10 text-slate-300 hover:text-white font-medium transition-colors">
@@ -164,7 +198,7 @@ const MainLayout = ({ children }) => {
                 Events
               </Link>
               
-              <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 rounded-md hover:bg-white/10 text-slate-300 hover:text-white font-medium transition-colors">
+              <Link to="/connections" onClick={() => setIsMenuOpen(false)} className="px-3 py-2 rounded-md hover:bg-white/10 text-slate-300 hover:text-white font-medium transition-colors">
                 Connections
               </Link>
 

@@ -90,7 +90,7 @@ exports.likePost = async (req, res) => {
             // Notify author if it's someone else liking
             if (post.author.toString() !== req.userId) {
                 const liker = await User.findById(req.userId);
-                await createStaticNotification(post.author, `${liker.username} liked your post.`);
+                await createStaticNotification(post.author, `${liker.username} liked your post.`, 'like', liker._id, `/profile/${liker._id}`);
             }
         }
 
@@ -123,7 +123,7 @@ exports.commentPost = async (req, res) => {
         // Notify author if it's someone else commenting
         if (post.author.toString() !== req.userId) {
             const commenter = await User.findById(req.userId);
-            await createStaticNotification(post.author, `${commenter.username} commented on your post: "${text.substring(0, 20)}..."`);
+            await createStaticNotification(post.author, `${commenter.username} commented on your post: "${text.substring(0, 20)}..."`, 'comment', commenter._id, `/profile/${commenter._id}`);
         }
 
         // Return fully populated post

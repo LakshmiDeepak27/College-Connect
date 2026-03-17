@@ -215,7 +215,7 @@ try {
 const token = localStorage.getItem('token');
 
 await axios.post(
-'http://localhost:5000/api/connections/request',
+'http://localhost:5000/api/connections/send',
 { receiverId: profileData._id },
 { headers:{ Authorization:`Bearer ${token}` } }
 );
@@ -234,7 +234,7 @@ alert("Already requested or connected");
 const handleAccept = async () => {
 try {
 const token = localStorage.getItem('token');
-await axios.post(`http://localhost:5000/api/connections/accept/${connectionId}`, {}, {
+await axios.post(`http://localhost:5000/api/connections/accept`, { connectionId }, {
 headers: { Authorization: `Bearer ${token}` }
 });
 setConnectionStatus('connected');
@@ -246,7 +246,7 @@ alert("Error accepting request");
 const handleReject = async () => {
 try {
 const token = localStorage.getItem('token');
-await axios.post(`http://localhost:5000/api/connections/reject/${connectionId}`, {}, {
+await axios.post(`http://localhost:5000/api/connections/reject`, { connectionId }, {
 headers: { Authorization: `Bearer ${token}` }
 });
 setConnectionStatus('not_connected');

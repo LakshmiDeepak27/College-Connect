@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 function OpportunitiesPage() {
     const [opportunities, setOpportunities] = useState([]);
     const [showForm, setShowForm] = useState(false);
+    const [selectedOpportunity, setSelectedOpportunity] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [formData, setFormData] = useState({
         title: '',
@@ -151,7 +152,17 @@ function OpportunitiesPage() {
                                         </div>
                                     </div>
 
-                                    <p className="mt-4 text-white/80 text-sm whitespace-pre-wrap">{opp.description}</p>
+                                    <p className="mt-4 text-white/80 text-sm line-clamp-3">
+                                        {opp.description}
+                                    </p>
+                                    {opp.description.length > 200 && (
+                                        <button 
+                                            onClick={() => setSelectedOpportunity(opp)}
+                                            className="text-blue-400 text-xs hover:underline mt-1"
+                                        >
+                                            View more
+                                        </button>
+                                    )}
 
                                     <div className="mt-6 flex justify-between items-center border-t border-white/10 pt-4">
                                         <div className="flex items-center space-x-2">
@@ -167,16 +178,12 @@ function OpportunitiesPage() {
                                                 <p className="text-white/50 capitalize">{opp.author.role}</p>
                                             </div>
                                         </div>
-                                        {opp.applicationLink && (
-                                            <a
-                                                href={opp.applicationLink}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-sm font-medium text-white bg-green-600 hover:bg-green-700 py-1.5 px-4 rounded transition-colors shadow-sm"
-                                            >
-                                                Apply Now
-                                            </a>
-                                        )}
+                                        <button
+                                            onClick={() => setSelectedOpportunity(opp)}
+                                            className="text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 py-1.5 px-4 rounded transition-colors shadow-sm"
+                                        >
+                                            View Details
+                                        </button>
                                     </div>
                                 </div>
                             ))
@@ -184,6 +191,69 @@ function OpportunitiesPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Opportunity Details Modal */}
+            {selectedOpportunity && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedOpportunity(null)}></div>
+                    <div className="relative bg-[#0f0f0f] border border-white/10 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+                        <div className="p-6 border-b border-white/10 flex justify-between items-start">
+                            <div>
+                                <h2 className="text-2xl font-bold text-white">{selectedOpportunity.title}</h2>
+                                <p className="text-blue-400 font-medium">{selectedOpportunity.company}</p>
+                            </div>
+                            <button 
+                                onClick={() => setSelectedOpportunity(null)}
+                                className="p-2 hover:bg-white/5 rounded-lg text-white/40 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        
+                        <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            <div className="flex flex-wrap gap-4 mb-6">
+                                <div className="bg-blue-900/30 border border-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm font-medium">
+                                    {selectedOpportunity.type}
+                                </div>
+                                <div className="flex items-center text-white/60 text-sm">
+                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    {selectedOpportunity.location}
+                                </div>
+                                <div className="flex items-center text-white/60 text-sm">
+                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    {new Date(selectedOpportunity.createdAt).toLocaleDateString()}
+                                </div>
+                            </div>
+
+                            <div className="text-white/80 space-y-4">
+                                <h3 className="text-white font-semibold text-lg">Description</h3>
+                                <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                                    {selectedOpportunity.description}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-white/10 bg-white/5 flex gap-3 justify-end">
+                            <button 
+                                onClick={() => setSelectedOpportunity(null)}
+                                className="px-6 py-2 rounded-lg text-white font-medium border border-white/10 hover:bg-white/5 transition-colors"
+                            >
+                                Close
+                            </button>
+                            {selectedOpportunity.applicationLink && (
+                                <a
+                                    href={selectedOpportunity.applicationLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold transition-colors shadow-lg shadow-green-600/20"
+                                >
+                                    Apply Now
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </MainLayout>
     );
 }

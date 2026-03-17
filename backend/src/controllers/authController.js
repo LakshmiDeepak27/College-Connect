@@ -1,5 +1,6 @@
 const jwt= require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto');
 const User = require('../models/User');
 // async function handleUserSignUp(req,res){
 //     const {username , email , password} = req.body;
@@ -119,6 +120,10 @@ exports.login = async(req , res)=>{
         if(!isMatch){
             return res.status(400).json({message:"Invalid Credentials"})
         }
+
+        if (!user.isVerified) {
+            return res.status(401).json({ message: "Please verify your email before logging in." });
+        }
         //   return res.status(200).json({
         //     email:user._id,
         //     username: user.username
@@ -169,4 +174,70 @@ exports.   getProfile = async (req, res) => {
     console.error("PROFILE ERROR ", error);
     return res.status(500).json({ message: "Server error" });
   }
+};
+
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found with this email" });
+        }
+
+        const resetToken = crypto.randomBytes(20).toString('hex');
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+        await user.save();
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+        const mailOptions = {
+            from: 'noreply@collegeconnect.com',
+            to: user.email,
+            subject: 'Password Reset Request',
+            html: `<h3>You requested a password reset</h3>
+                   <p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 1 hour.</p>`
+        };
+
+        transporter.sendMail(mailOptions).catch(err => console.log('Mail failed:', err.message));
+
+        res.status(200).json({ message: "Reset link sent to your email" });
+    } catch (error) {
+        console.error("FORGOT PASSWORD ERROR", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: "Invalid or expired token" });
+        }
+
+        user.password = password;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: "Password reset successful" });
+    } catch (error) {
+        console.error("RESET PASSWORD ERROR", error);
+        res.status(500).json({ message: "Server error" });
+    }
 };

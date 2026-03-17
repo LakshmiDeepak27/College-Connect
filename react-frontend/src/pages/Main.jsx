@@ -60,6 +60,20 @@ function Main() {
         }
     };
 
+    const handleConnect = async (receiverId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:5000/api/connections/send', { receiverId }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('Request sent!');
+            // remove from suggestions or fetch again
+            fetchSuggestions();
+        } catch (error) {
+            alert('Error sending request. Maybe already connected or pending.');
+        }
+    };
+
     const handleCreatePost = async () => {
         if (!newPostContent.trim() && !newPostImage) return;
         try {
@@ -230,20 +244,24 @@ function Main() {
                                                 <p className="text-[10px] text-white/50 truncate capitalize">{sugg.role} {sugg.department ? `• ${sugg.department}` : ''}</p>
                                             </div>
                                         </div>
-                                        <button 
-                                            className="ml-2 flex-shrink-0 bg-white/10 hover:bg-blue-600 border border-white/10 hover:border-transparent text-white rounded-full p-1.5 transition-colors"
-                                            title="Connect"
-                                            onClick={() => navigate(`/profile/${sugg._id}`)}
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                                        </button>
+                                        {sugg.connectionStatus === 'pending' ? (
+                                            <span className="text-[10px] text-yellow-500 font-bold px-2">Pending</span>
+                                        ) : (
+                                            <button 
+                                                className="ml-2 flex-shrink-0 bg-white/10 hover:bg-blue-600 border border-white/10 hover:border-transparent text-white rounded-full p-1.5 transition-colors"
+                                                title="Connect"
+                                                onClick={() => handleConnect(sugg._id)}
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                            </button>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
                         )}
                         
                         <div className="mt-4 pt-3 border-t border-white/10 text-center">
-                            <button className="text-xs font-medium text-blue-400 hover:text-blue-300">View all recommendations</button>
+                            <button onClick={() => navigate('/connections')} className="text-xs font-medium text-blue-400 hover:text-blue-300">View all recommendations</button>
                         </div>
                     </div>
                 </div>
